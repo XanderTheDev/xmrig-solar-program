@@ -104,3 +104,11 @@ chmod +x run_server.py
 ### 9. You're done!
 
 If everything went well you can now access your [Dashboard](http://127.0.0.1:8000/index.html)!
+
+### 6. Notes
+
+- Data updates every 60 seconds.
+- Logs are stored in monthly_stats.json automatically.
+- The dashboard uses a dark theme and is mobile-friendly.
+
+---
