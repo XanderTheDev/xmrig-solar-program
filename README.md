@@ -70,7 +70,13 @@ you need to copy the ```5ed23680-1929-5f82-bdbf-f748ff54f43b``` and put it in wh
 Put in all your info with how you logged in into the SEMS Portal in goodwe_scripts/config.py. So like:
 - ```'gw_account'``` is your email for the SEMS Portal
 - ```'gw_password'``` is your password for the SEMS Portal
-- ```'city'``` is the city of your GoodWE inverter
+
+Keep in mind this will just be in plain text in a file. So if you are ever going to publish this to the web make sure to
+use an .env file or something. You would then use ```os.getenv("SEMS_PASSWORD")``` for example for the gw_password field.
+You also need to add ```import os``` then. You could also just put the config.py in a ignore file lik gitignore. BUT IF
+YOU ARE GOING TO MAKE YOUR DASHBOARD PUBLCI THIS DOES NOT WORK! You then really need to change how it gets it's information.
+I am just not using it publically or directly putting my files on github (I just copy the code to be safe), so I do not really need
+the extra security. And also the SEMS Portal account is not so important to me.
 
 ### 6. Copy your XMRig to the correct location and change location in main.py
 
