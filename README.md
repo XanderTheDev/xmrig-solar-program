@@ -67,8 +67,40 @@ you need to copy the ```5ed23680-1929-5f82-bdbf-f748ff54f43b``` and put it in wh
 
 ### 5. Add all the other info into config.py
 
-Put in all your info with how you logged in into the SEMS Portal in config.py. So like:
+Put in all your info with how you logged in into the SEMS Portal in goodwe_scripts/config.py. So like:
 - ```'gw_account'``` is your email for the SEMS Portal
 - ```'gw_password'``` is your password for the SEMS Portal
 - ```'city'``` is the city of your GoodWE inverter
 
+### 6. Copy your XMRig to the correct location and change location in main.py
+
+Copy your XMRig config.json and move it to ~/.config/xmrig/config.json if not already. Then in goodwe_scripts/main.py
+change YOUR_USERNAME to your username in the XMRIG_CMD variable.
+
+### 7. Change kWh price in index.html
+
+change ```const costPerKWh = 0.22; // €/kWh``` to what your actual price is for 1 kWh.
+
+### 8. Run main.py
+
+Go to the goodwe_scripts folder and run:
+```bash
+sudo python main.py
+```
+
+```sudo``` is recommended, because otherwise MSR does not work, but if you do not care about that, it still keeps working, but just without MSR.
+
+### 8. Run run_server.py
+
+In another terminal go to back to the goodwe_scripts folder and run:
+```bash
+python run_server.py
+
+# Or alternatively you can also just make it an executable and run it:
+chmod +x run_server.py
+./run_server.py
+```
+
+### 9. You're done!
+
+If everything went well you can now access your [Dashboard](127.0.0.1:8000/index.html)!
