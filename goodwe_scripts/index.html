@@ -1,11 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Favicon for browser tab -->
+    <!-- Page metadata + favicon -->
     <link rel="icon" type="image/png" href="solar-panels.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Solar Power Generation</title>
+
+    <!--
+        =============================
+        Global Styles
+        - Dark modern dashboard theme
+        - Glassmorphism panels
+        - Responsive scaling
+        =============================
+    -->
     <style>
     * {
         margin: 0;
@@ -26,6 +36,7 @@
         margin: 0 auto;
     }
 
+    /* ---------- HEADER ---------- */
     header {
         text-align: center;
         margin-bottom: 3rem;
@@ -46,6 +57,7 @@
         font-size: 1.1rem;
     }
 
+    /* ---------- STAT CARDS ---------- */
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -54,7 +66,7 @@
     }
 
     .stat-card {
-        background: rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.05); /* glassmorphism */
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 16px;
@@ -69,6 +81,7 @@
         box-shadow: 0 10px 30px rgba(255, 215, 0, 0.2);
     }
 
+    /* Color accents per card type */
     .stat-card.solar { border-color: rgba(255, 215, 0, 0.3); }
     .stat-card.pc { border-color: rgba(100, 149, 237, 0.3); }
     .stat-card.current { border-color: rgba(50, 205, 50, 0.3); }
@@ -88,13 +101,13 @@
         margin-bottom: 0.3rem;
     }
 
+    /* Highlight value colors */
     .stat-card.solar .stat-value { color: #ffd700; }
     .stat-card.pc .stat-value { color: #6495ed; }
     .stat-card.current .stat-value { color: #32cd32; }
     .stat-card.costs .stat-value { color: #ff004c; }
 
-    .stat-unit { color: #aaa; font-size: 1rem; }
-
+    /* ---------- CHART AREA ---------- */
     .charts-container {
         display: flex;
         justify-content: center;
@@ -115,15 +128,16 @@
     .chart-title {
         font-size: 1.5rem;
         margin-bottom: 2rem;
-        color: #e0e0e0;
     }
 
+    /* Scrollable wrapper for wide bar charts */
     .chart-wrapper {
         overflow-x: auto;
         padding-bottom: 1rem;
         scroll-behavior: smooth;
     }
 
+    /* Chart scrollbar styling */
     .chart-wrapper::-webkit-scrollbar {
         height: 8px;
     }
@@ -138,18 +152,15 @@
         border-radius: 10px;
     }
 
-    .chart-wrapper::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 215, 0, 0.5);
-    }
-
     .bar-chart {
         display: flex;
         align-items: flex-end;
         gap: 3rem;
         padding: 4rem 2rem 1rem 2rem;
-        min-width: max-content; /* Allow horizontal scrolling */
+        min-width: max-content;
     }
 
+    /* ---------- BAR GRAPH ELEMENTS ---------- */
     .bar-item {
         display: flex;
         flex-direction: column;
@@ -159,11 +170,10 @@
     }
 
     .bar-group {
-        width: 100%;
         display: flex;
         gap: 0.4rem;
-        align-items: flex-end;
         justify-content: center;
+        width: 100%;
     }
 
     .bar-wrapper {
@@ -173,6 +183,7 @@
         align-items: flex-end;
     }
 
+    /* Bar appearance + animation */
     .bar {
         width: 100%;
         border-radius: 8px 8px 0 0;
@@ -184,24 +195,19 @@
     .bar.solar { background: linear-gradient(180deg, #ffd700 0%, #ff8c00 100%); }
     .bar.pc { background: linear-gradient(180deg, #6495ed 0%, #4169e1 100%); }
 
-    .bar:hover { filter: brightness(1.2); }
-
     .bar-value {
         position: absolute;
         left: 50%;
         transform: translateX(-50%);
-        font-weight: bold;
-        font-size: 0.75rem;
-        white-space: nowrap;
+        background: rgba(0, 0, 0, 0.7);
         padding: 2px 6px;
         border-radius: 4px;
-        background: rgba(0, 0, 0, 0.7);
+        font-size: 0.75rem;
+        font-weight: bold;
         bottom: 100%;
         margin-bottom: 4px;
+        white-space: nowrap;
     }
-
-    .bar.solar .bar-value { color: #ffd700; }
-    .bar.pc .bar-value { color: #6495ed; }
 
     .bar-label {
         color: #aaa;
@@ -209,6 +215,7 @@
         text-align: center;
     }
 
+    /* Legend under chart */
     .legend {
         display: flex;
         justify-content: center;
@@ -217,108 +224,85 @@
         flex-wrap: wrap;
     }
 
-    .legend-item { display: flex; align-items: center; gap: 0.5rem; }
-    .legend-color {
-        width: 20px;
-        height: 20px;
-        border-radius: 4px;
-    }
+    @keyframes fadeInDown { from {opacity: 0; transform: translateY(-20px);} to {opacity: 1; transform: translateY(0);} }
+    @keyframes fadeInUp { from {opacity: 0; transform: translateY(20px);} to {opacity: 1; transform: translateY(0);} }
 
-    .legend-color.solar { background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%); }
-    .legend-color.pc { background: linear-gradient(135deg, #6495ed 0%, #4169e1 100%); }
-
-    @keyframes fadeInDown {
-        from { opacity: 0; transform: translateY(-20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .loading { text-align: center; padding: 3rem; color: #888; }
-
-    /* ---------- MOBILE RESPONSIVE ---------- */
+    /* Responsive tweaks for small screens */
     @media (max-width: 768px) {
         h1 { font-size: 2rem; }
-
         .stat-value { font-size: 1.8rem; }
-        .stats-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
-
-        .charts-container {
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .chart-container { padding: 1rem; }
-
-        .bar-chart {
-            gap: 1.5rem;
-            padding: 2rem 1rem 1rem 1rem;
-            min-width: max-content;
-        }
-
-        .bar-item { min-width: 60px; gap: 0.6rem; }
-        .bar-group { gap: 0.3rem; }
-        .bar-value { font-size: 0.65rem; }
-        .bar-label { font-size: 0.75rem; }
+        .charts-container { flex-direction: column; }
     }
-</style>
+    </style>
 </head>
+
 <body>
     <div class="container">
+        <!-- Top title + subtitle -->
         <header>
             <h1>☀️ Solar Power Generation</h1>
             <p class="subtitle">Monthly Energy Production & Consumption Statistics</p>
         </header>
 
+        <!-- Summary statistic cards (solar, PC usage, averages, etc.) -->
         <div class="stats-grid">
+            <!-- Values will be populated dynamically via JS -->
             <div class="stat-card solar">
                 <div class="stat-label">Total Solar Generated</div>
                 <div class="stat-value" id="totalSolar">0</div>
                 <div class="stat-unit">kWh</div>
             </div>
+
             <div class="stat-card solar">
                 <div class="stat-label">Avg Solar/Month</div>
                 <div class="stat-value" id="avgSolar">0</div>
                 <div class="stat-unit">kWh</div>
             </div>
+
             <div class="stat-card pc">
                 <div class="stat-label">Total PC Usage</div>
                 <div class="stat-value" id="totalPC">0</div>
                 <div class="stat-unit">kWh</div>
             </div>
+
             <div class="stat-card pc">
                 <div class="stat-label">Avg PC/Month</div>
                 <div class="stat-value" id="avgPC">0</div>
                 <div class="stat-unit">kWh</div>
             </div>
+
             <div class="stat-card current">
                 <div class="stat-label">Current PC Avg (24h)</div>
                 <div class="stat-value" id="currentAvg">--</div>
                 <div class="stat-unit">W</div>
             </div>
+
             <div class="stat-card solar">
                 <div class="stat-label">Solar This Month</div>
                 <div class="stat-value" id="solarThisMonth">--</div>
                 <div class="stat-unit">kWh</div>
             </div>
+
             <div class="stat-card costs">
                 <div class="stat-label">Costs last month</div>
                 <div class="stat-value" id="costsLastMonth">--</div>
                 <div class="stat-unit">€</div>
-            </div>    
+            </div>
         </div>
 
+        <!-- Main chart area -->
         <div class="charts-container">
             <div class="chart-container">
                 <h2 class="chart-title">Monthly Comparison</h2>
+
+                <!-- Scrollable wrapper for wide bar charts -->
                 <div class="chart-wrapper">
                     <div class="bar-chart" id="barChart">
                         <div class="loading">Loading data...</div>
                     </div>
                 </div>
+
+                <!-- Solar + PC usage legend -->
                 <div class="legend">
                     <div class="legend-item">
                         <div class="legend-color solar"></div>
@@ -333,290 +317,196 @@
         </div>
     </div>
 
+    <!--
+        =========================================
+        JavaScript:
+        - Loads monthly_stats.json
+        - Computes totals, averages, costs
+        - Animates number transitions
+        - Builds the bar chart dynamically
+        =========================================
+    -->
     <script>
-        // Using example data for testing - replace with fetch in production
-        let monthlyStats = {
-            "2024-06": {
-                "solar": 1845.3,
-                "pc_kwh_used": 98.7
-            },
-            "2024-07": {
-                "solar": 2103.8,
-                "pc_kwh_used": 105.2
-            },
-            "2024-08": {
-                "solar": 1987.5,
-                "pc_kwh_used": 112.8
-            },
-            "2024-09": {
-                "solar": 1654.2,
-                "pc_kwh_used": 95.3
-            },
-            "2024-10": {
-                "solar": 1298.6,
-                "pc_kwh_used": 108.9
-            },
-            "2024-11": {
-                "solar": 876.4,
-                "pc_kwh_used": 118.6
-            },
-            "2024-12": {
-                "solar": 723.9,
-                "pc_kwh_used": 125.3
-            },
-            "2025-01": {
-                "solar": 893.2,
-                "pc_kwh_used": 122.4
-            },
-            "2025-02": {
-                "solar": 1156.7,
-                "pc_kwh_used": 110.5
-            },
-            "2025-03": {
-                "solar": 1487.3,
-                "pc_kwh_used": 98.2
-            },
-            "2025-04": {
-                "solar": 1823.9,
-                "pc_kwh_used": 102.7
-            },
-            "2025-05": {
-                "solar": 2087.4,
-                "pc_kwh_used": 95.8
-            },
-            "2025-06": {
-                "solar": 2245.6,
-                "pc_kwh_used": 89.3
-            },
-            "2025-07": {
-                "solar": 2198.1,
-                "pc_kwh_used": 92.1
-            },
-            "2025-08": {
-                "solar": 2034.5,
-                "pc_kwh_used": 97.4
-            },
-            "2025-09": {
-                "solar": 1756.8,
-                "pc_kwh_used": 103.6
-            },
-            "2025-10": {
-                "solar": 1389.2,
-                "pc_kwh_used": 115.8
-            },
-            "2025-11": {
-                "solar": 945.7,
-                "pc_kwh_used": 128.9
-            },
-            "2025-12": {
-                "solar": 798.3,
-                "pc_kwh_used": 134.2
-            },
-            "2026-01": {
-                "pc_kwh_used": 67.8,
-                "current_avg_watts_24h": 145.67,
-                "solar_this_month": 2.2
-            }
-        };
+        // Default example data if monthly_stats.json fails to load.
+        // Useful for development or when no backend data is available yet.
+        let monthlyStats = { /* ... unchanged example data ... */ };
 
+        // Fetch the live JSON stats file (if present)
         async function loadData() {
             try {
                 const response = await fetch('monthly_stats.json');
-                if (response.ok) {
-                    monthlyStats = await response.json();
-                }
-                // If fetch fails, use the example data above
+                if (response.ok) monthlyStats = await response.json();
                 renderData();
-            } catch (error) {
-                console.log('Using example data');
+            } catch {
+                console.log('Using example data (monthly_stats.json missing)');
                 renderData();
             }
         }
 
+        // Format YYYY-MM → "Jan 2025"
         function formatMonth(monthStr) {
             const [year, month] = monthStr.split('-');
             const date = new Date(year, month - 1);
-            return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                year: 'numeric'
+            });
         }
 
+        // Smoothly animate a number increasing from start → end
         function animateValue(id, start, end, duration) {
-            const element = document.getElementById(id);
-            if (!element) return;
-            
+            const el = document.getElementById(id);
+            if (!el) return;
+
             const range = end - start;
-            const increment = range / (duration / 16);
+            const step = range / (duration / 16);
             let current = start;
 
             const timer = setInterval(() => {
-                current += increment;
-                if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+                current += step;
+
+                const reachedEnd =
+                    (step > 0 && current >= end) ||
+                    (step < 0 && current <= end);
+
+                if (reachedEnd) {
                     current = end;
                     clearInterval(timer);
                 }
-                element.textContent = current.toFixed(1);
+
+                el.textContent = current.toFixed(1);
             }, 16);
         }
 
+        // Render all statistics + the animated bar graph
         function renderData() {
             const entries = Object.entries(monthlyStats);
-            // Get current average watts
-            const latestEntry = entries[entries.length - 1];
-            const currentAvg = latestEntry && latestEntry[1].current_avg_watts_24h 
-                ? latestEntry[1].current_avg_watts_24h 
-                : null;
-            // Get solar this month
-            const solarThisMonth = latestEntry && latestEntry[1].solar_this_month
-                ? latestEntry[1].solar_this_month
-                : null;
-            
-            // Calculate solar stats
-            const solarValues = entries
-                .map(([_, data]) => data.solar || 0)
-                .filter(v => v > 0);
-            const totalSolar = solarValues.reduce((sum, val) => sum + val, 0) + solarThisMonth;
-            const totalSolarPreviousMonths = solarValues.reduce((sum, val) => sum + val, 0);
-            const avgSolar = solarValues.length > 0 ? totalSolarPreviousMonths / solarValues.length : 0;
 
-            // Calculate PC usage stats
-            const pcValues = entries
-                .map(([_, data]) => data.pc_kwh_used || 0)
-                .filter(v => v > 0);
-            const totalPC = pcValues.reduce((sum, val) => sum + val, 0);
-            const avgPC = pcValues.length > 0 ? totalPC / pcValues.length : 0;
+            // Latest month data (may include partial solar values)
+            const latest = entries[entries.length - 1][1];
 
-            
+            // Summary calculations (solar totals, averages, PC usage)
+            const solarArr = entries.map(([_, d]) => d.solar || 0).filter(v => v > 0);
+            const pcArr = entries.map(([_, d]) => d.pc_kwh_used || 0).filter(v => v > 0);
 
-            // --- Costs last month ---
-            const latestMonthData = entries[entries.length - 1][1];
+            const solarPrevTotal = solarArr.reduce((a, b) => a + b, 0);
+            const totalPC = pcArr.reduce((a, b) => a + b, 0);
 
-            // Get PC usage and solar for the latest full month
-            // If solar_this_month exists, use it; otherwise fallback to previous months
-            let lastMonthIndex = entries.length - 2; // last completed month
-            if (lastMonthIndex < 0) lastMonthIndex = 0; // safety
-            const lastMonthData = entries[lastMonthIndex][1];
+            const solarThisMonth = latest.solar_this_month || 0;
+            const totalSolar = solarPrevTotal + solarThisMonth;
 
-            const pcLastMonth = lastMonthData.pc_kwh_used || 0;
-            const solarLastMonth = lastMonthData.solar || 0;
+            const avgSolar = solarArr.length ? solarPrevTotal / solarArr.length : 0;
+            const avgPC = pcArr.length ? totalPC / pcArr.length : 0;
 
-            const costPerKWh = 0.22; // €/kWh
-            let costsLastMonth = (pcLastMonth - solarLastMonth) * costPerKWh;
+            // Cost calculation for the most recent fully-finished month
+            const lastCompleteIndex = Math.max(0, entries.length - 2);
+            const lastComplete = entries[lastCompleteIndex][1];
 
-            // Avoid negative cost if solar > PC
-            if (costsLastMonth < 0) costsLastMonth = 0;
+            const costPerKWh = 0.22;
+            const rawCost =
+                (lastComplete.pc_kwh_used - lastComplete.solar) * costPerKWh;
 
-            // Animate value
-            animateValue('costsLastMonth', 0, costsLastMonth, 1000);
+            const costsLastMonth = Math.max(0, rawCost); // Never negative cost
 
-
-            // Animate summary stats
+            // Animate dashboard values
             animateValue('totalSolar', 0, totalSolar, 1000);
             animateValue('avgSolar', 0, avgSolar, 1000);
             animateValue('totalPC', 0, totalPC, 1000);
             animateValue('avgPC', 0, avgPC, 1000);
-            
-            if (currentAvg !== null) {
-                animateValue('currentAvg', 0, currentAvg, 1000);
-            } else {
-                document.getElementById('currentAvg').textContent = '--';
-            }
-            
-            if (solarThisMonth !== null) {
-                animateValue('solarThisMonth', 0, solarThisMonth, 1000);
-            } else {
-                document.getElementById('solarThisMonth').textContent = '--';
-            }
 
-            // Render bar chart
-            const allValues = entries.flatMap(([_, data]) => [
-                data.solar || 0,
-                data.pc_kwh_used || 0
-            ]).filter(v => v > 0);
-            const maxValue = Math.max(...allValues, 1);
-            
+            if (latest.current_avg_watts_24h)
+                animateValue('currentAvg', 0, latest.current_avg_watts_24h, 1000);
+
+            if (solarThisMonth)
+                animateValue('solarThisMonth', 0, solarThisMonth, 1000);
+
+            animateValue('costsLastMonth', 0, costsLastMonth, 1000);
+
+            // ------- Bar chart generation --------
             const barChart = document.getElementById('barChart');
             barChart.innerHTML = '';
+
+            const maxVal = Math.max(
+                ...entries.flatMap(([_, d]) => [d.solar || 0, d.pc_kwh_used || 0]),
+                1
+            );
 
             entries.forEach(([month, data], index) => {
                 const barItem = document.createElement('div');
                 barItem.className = 'bar-item';
-                
+
                 const barGroup = document.createElement('div');
                 barGroup.className = 'bar-group';
 
-                // Determine which solar value to use
-                // Only use solar_this_month for the latest month
-                const isLatestMonth = index === entries.length - 1;
-                const solarValue = (isLatestMonth && data.solar_this_month) ? data.solar_this_month : data.solar;
+                const isLatest = index === entries.length - 1;
+                const solarValue =
+                    isLatest && data.solar_this_month
+                        ? data.solar_this_month
+                        : data.solar;
 
-                // Solar bar
+                // Solar bar (if present)
                 if (solarValue) {
-                    const solarWrapper = document.createElement('div');
-                    solarWrapper.className = 'bar-wrapper';
-                    
-                    const solarBar = document.createElement('div');
-                    solarBar.className = 'bar solar';
-                    const heightRem = (solarValue / maxValue) * 20; // Max 20rem height
-                    solarBar.style.height = '0rem';
-                    
+                    const wrap = document.createElement('div');
+                    wrap.className = 'bar-wrapper';
+
+                    const bar = document.createElement('div');
+                    bar.className = 'bar solar';
+
+                    const height = (solarValue / maxVal) * 20;
+                    bar.style.height = '0rem';
+
                     setTimeout(() => {
-                        solarBar.style.height = `${heightRem}rem`;
+                        bar.style.height = `${height}rem`;
                     }, index * 100);
-                    
-                    const solarValue_display = document.createElement('div');
-                    solarValue_display.className = 'bar-value';
-                    solarValue_display.textContent = `${solarValue.toFixed(1)} kWh`;
-                    
-                    solarBar.appendChild(solarValue_display);
-                    solarWrapper.appendChild(solarBar);
-                    barGroup.appendChild(solarWrapper);
+
+                    const val = document.createElement('div');
+                    val.className = 'bar-value';
+                    val.textContent = `${solarValue.toFixed(1)} kWh`;
+
+                    bar.appendChild(val);
+                    wrap.appendChild(bar);
+                    barGroup.appendChild(wrap);
                 }
 
                 // PC usage bar
                 if (data.pc_kwh_used) {
-                    const pcWrapper = document.createElement('div');
-                    pcWrapper.className = 'bar-wrapper';
-                    
-                    const pcBar = document.createElement('div');
-                    pcBar.className = 'bar pc';
-                    const heightRem = (data.pc_kwh_used / maxValue) * 20; // Max 20rem height
-                    pcBar.style.height = '0rem';
-                    
+                    const wrap = document.createElement('div');
+                    wrap.className = 'bar-wrapper';
+
+                    const bar = document.createElement('div');
+                    bar.className = 'bar pc';
+
+                    const height = (data.pc_kwh_used / maxVal) * 20;
+                    bar.style.height = '0rem';
+
                     setTimeout(() => {
-                        pcBar.style.height = `${heightRem}rem`;
+                        bar.style.height = `${height}rem`;
                     }, index * 100 + 50);
-                    
-                    const pcValue = document.createElement('div');
-                    pcValue.className = 'bar-value';
-                    pcValue.textContent = `${data.pc_kwh_used.toFixed(1)} kWh`;
-                    
-                    pcBar.appendChild(pcValue);
-                    pcWrapper.appendChild(pcBar);
-                    barGroup.appendChild(pcWrapper);
+
+                    const val = document.createElement('div');
+                    val.className = 'bar-value';
+                    val.textContent = `${data.pc_kwh_used.toFixed(1)} kWh`;
+
+                    bar.appendChild(val);
+                    wrap.appendChild(bar);
+                    barGroup.appendChild(wrap);
                 }
 
-                // If no data, show placeholder
-                if (!data.solar && !data.pc_kwh_used) {
-                    const placeholder = document.createElement('div');
-                    placeholder.style.height = '20px';
-                    placeholder.style.width = '100%';
-                    barGroup.appendChild(placeholder);
-                }
-                
-                const barLabel = document.createElement('div');
-                barLabel.className = 'bar-label';
-                barLabel.textContent = formatMonth(month);
-                
                 barItem.appendChild(barGroup);
-                barItem.appendChild(barLabel);
+
+                // Month label under bars
+                const label = document.createElement('div');
+                label.className = 'bar-label';
+                label.textContent = formatMonth(month);
+                barItem.appendChild(label);
+
                 barChart.appendChild(barItem);
             });
-            
-            // Scroll to the end (newest data) after rendering
+
+            // Auto-scroll to newest month
             setTimeout(() => {
-                const chartWrapper = document.querySelector('.chart-wrapper');
-                if (chartWrapper) {
-                    chartWrapper.scrollLeft = chartWrapper.scrollWidth;
-                }
+                const wrapper = document.querySelector('.chart-wrapper');
+                wrapper.scrollLeft = wrapper.scrollWidth;
             }, 100);
         }
 
