@@ -49,7 +49,7 @@ cd xmrig-solar-program
 pip install requests
 ```
 
-#### Immutable distro NixOS 
+#### Immutable distro NixOS 25.11
 ```bash
 nix-shell  # You need to be in the repository to do this
 ```
