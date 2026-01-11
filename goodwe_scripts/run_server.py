@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """
-Simple HTTP server to run the Solar Power Generation Dashboard
+Simple local HTTP server for previewing the Solar Power Generation Dashboard.
+This script serves static files and adds small enhancements like:
+ - CORS headers (for local JavaScript fetches)
+ - Cache disabling (so data updates are reflected immediately)
+ - Auto-checks for required project files
 """
 
 import http.server
@@ -8,32 +12,47 @@ import socketserver
 import os
 from pathlib import Path
 
+# Port where the development server will be available.
 PORT = 8000
 
+
 class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
+    """Custom request handler that injects HTTP headers useful for local dev."""
+
     def end_headers(self):
-        # Add CORS headers to allow local file access
+        # Allow any origin to access local resources.
+        # This prevents CORS errors when JavaScript fetches JSON files locally.
         self.send_header('Access-Control-Allow-Origin', '*')
+
+        # Disable caching to ensure file changes show up immediately in the browser.
         self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
+
+        # Call parent class to finish header sending.
         super().end_headers()
 
+
 def main():
-    # Change to the script's directory
+    """Entry point: changes to project directory, validates files, then starts server."""
+
+    # Make sure the server serves files relative to the script's location,
+    # regardless of where you run it from.
     script_dir = Path(__file__).parent
     os.chdir(script_dir)
-    
-    # Check if required files exist
+
+    # Basic sanity checks for essential dashboard files.
     if not Path('index.html').exists():
         print("❌ Error: index.html not found in current directory")
         return
-    
+
     if not Path('monthly_stats.json').exists():
         print("⚠️  Warning: monthly_stats.json not found")
-        print("   The website will show an error until you add the JSON file")
+        print("   The dashboard will show an error until this file is provided.")
         print()
-    
-    # Create server with SO_REUSEADDR to allow immediate restart
+
+    # Allow immediate restart without waiting for the socket to fully release.
     socketserver.TCPServer.allow_reuse_address = True
+
+    # Create and start the HTTP server.
     with socketserver.TCPServer(("", PORT), MyHTTPRequestHandler) as httpd:
         url = f"http://localhost:{PORT}"
         print("=" * 60)
@@ -45,12 +64,12 @@ def main():
         print("🌐 Opening browser...")
         print("⏹️  Press Ctrl+C to stop the server")
         print("=" * 60)
-        
-        # Start server
+
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
             print("\n\n👋 Server stopped. Goodbye!")
+
 
 if __name__ == "__main__":
     main()
