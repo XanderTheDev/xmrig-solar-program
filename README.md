@@ -1,5 +1,5 @@
 # xmrig-solar-program
-XMRig script that keeps track of CPU power consumption and solar energy generation (from a goodwe inverter) and shows it in a nice dashboard.
+XMRig script that keeps track of CPU power consumption and solar energy generation (from a goodwe inverter) and shows it in a nice dashboard. BTW the dashboard itself is mostly vibe coded, I just needed something that showed the info in a nice way, because SEMS can't make a nice UI for some reason. And the XMRig script (main.py) is partially vibe coded, like I made a script for something else before and I just repurposed it with AI.
 
 ---
 
