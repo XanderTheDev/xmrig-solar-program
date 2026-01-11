@@ -30,3 +30,26 @@ XMRig script that keeps track of CPU power consumption and solar energy generati
 - XMRig config file
 
 ---
+
+## Setup Tutorial
+
+Follow these steps to get the dashboard running:
+
+### 1. Clone this repository
+```bash
+git clone https://github.com/XanderTheDev/xmrig-solar-program.git
+cd xmrig-solar-program
+```
+
+### 2. Install needed dependencies
+
+#### Mutable linux distros
+
+```bash
+pip install requests
+```
+
+#### Immutable distro NixOS 
+```bash
+nix-shell  # You need to be in the repository to do this
+```
