@@ -21,3 +21,12 @@ XMRig script that keeps track of CPU power consumption and solar energy generati
 - A monthly comparison card.
 
 ---
+
+## Requirements
+
+- Python 3.12+
+- Goodwe inverter (I do not know which ones are supported by this, but I think most)
+- XMRig
+- XMRig config file
+
+---
