@@ -75,7 +75,7 @@ Put in all your info with how you logged in into the SEMS Portal in goodwe_scrip
 ### 6. Copy your XMRig to the correct location and change location in main.py
 
 Copy your XMRig config.json and move it to ~/.config/xmrig/config.json if not already. Then in goodwe_scripts/main.py
-change YOUR_USERNAME to your username in the XMRIG_CMD variable.
+change YOUR_USER to your username in the XMRIG_CMD variable.
 
 ### 7. Change kWh price in index.html
 
