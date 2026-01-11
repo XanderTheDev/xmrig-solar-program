@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Favicon for browser tab -->
+    <link rel="icon" type="image/png" href="solar-panels.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Power Generation</title>
+    <style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+        color: #e0e0e0;
+        min-height: 100vh;
+        padding: 2rem;
+    }
+
+    .container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    header {
+        text-align: center;
+        margin-bottom: 3rem;
+        animation: fadeInDown 0.6s ease-out;
+    }
+
+    h1 {
+        font-size: 2.5rem;
+        background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+        color: #888;
+        font-size: 1.1rem;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(255, 215, 0, 0.5);
+        box-shadow: 0 10px 30px rgba(255, 215, 0, 0.2);
+    }
+
+    .stat-card.solar { border-color: rgba(255, 215, 0, 0.3); }
+    .stat-card.pc { border-color: rgba(100, 149, 237, 0.3); }
+    .stat-card.current { border-color: rgba(50, 205, 50, 0.3); }
+    .stat-card.costs { border-color: rgba(255, 0, 0, 0.3); }
+
+    .stat-label {
+        color: #888;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+        font-size: 2.2rem;
+        font-weight: bold;
+        margin-bottom: 0.3rem;
+    }
+
+    .stat-card.solar .stat-value { color: #ffd700; }
+    .stat-card.pc .stat-value { color: #6495ed; }
+    .stat-card.current .stat-value { color: #32cd32; }
+    .stat-card.costs .stat-value { color: #ff004c; }
+
+    .stat-unit { color: #aaa; font-size: 1rem; }
+
+    .charts-container {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+    }
+
+    .chart-container {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 2rem;
+        animation: fadeInUp 0.8s ease-out;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .chart-title {
+        font-size: 1.5rem;
+        margin-bottom: 2rem;
+        color: #e0e0e0;
+    }
+
+    .chart-wrapper {
+        overflow-x: auto;
+        padding-bottom: 1rem;
+        scroll-behavior: smooth;
+    }
+
+    .chart-wrapper::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .chart-wrapper::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+    }
+
+    .chart-wrapper::-webkit-scrollbar-thumb {
+        background: rgba(255, 215, 0, 0.3);
+        border-radius: 10px;
+    }
+
+    .chart-wrapper::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 215, 0, 0.5);
+    }
+
+    .bar-chart {
+        display: flex;
+        align-items: flex-end;
+        gap: 3rem;
+        padding: 4rem 2rem 1rem 2rem;
+        min-width: max-content; /* Allow horizontal scrolling */
+    }
+
+    .bar-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        min-width: 80px;
+    }
+
+    .bar-group {
+        width: 100%;
+        display: flex;
+        gap: 0.4rem;
+        align-items: flex-end;
+        justify-content: center;
+    }
+
+    .bar-wrapper {
+        position: relative;
+        width: 100%;
+        display: flex;
+        align-items: flex-end;
+    }
+
+    .bar {
+        width: 100%;
+        border-radius: 8px 8px 0 0;
+        transition: height 0.6s ease;
+        position: relative;
+        height: 0;
+    }
+
+    .bar.solar { background: linear-gradient(180deg, #ffd700 0%, #ff8c00 100%); }
+    .bar.pc { background: linear-gradient(180deg, #6495ed 0%, #4169e1 100%); }
+
+    .bar:hover { filter: brightness(1.2); }
+
+    .bar-value {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        font-weight: bold;
+        font-size: 0.75rem;
+        white-space: nowrap;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.7);
+        bottom: 100%;
+        margin-bottom: 4px;
+    }
+
+    .bar.solar .bar-value { color: #ffd700; }
+    .bar.pc .bar-value { color: #6495ed; }
+
+    .bar-label {
+        color: #aaa;
+        font-size: 0.85rem;
+        text-align: center;
+    }
+
+    .legend {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-top: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .legend-item { display: flex; align-items: center; gap: 0.5rem; }
+    .legend-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+    }
+
+    .legend-color.solar { background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%); }
+    .legend-color.pc { background: linear-gradient(135deg, #6495ed 0%, #4169e1 100%); }
+
+    @keyframes fadeInDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .loading { text-align: center; padding: 3rem; color: #888; }
+
+    /* ---------- MOBILE RESPONSIVE ---------- */
+    @media (max-width: 768px) {
+        h1 { font-size: 2rem; }
+
+        .stat-value { font-size: 1.8rem; }
+        .stats-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+
+        .charts-container {
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .chart-container { padding: 1rem; }
+
+        .bar-chart {
+            gap: 1.5rem;
+            padding: 2rem 1rem 1rem 1rem;
+            min-width: max-content;
+        }
+
+        .bar-item { min-width: 60px; gap: 0.6rem; }
+        .bar-group { gap: 0.3rem; }
+        .bar-value { font-size: 0.65rem; }
+        .bar-label { font-size: 0.75rem; }
+    }
+</style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>☀️ Solar Power Generation</h1>
+            <p class="subtitle">Monthly Energy Production & Consumption Statistics</p>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card solar">
+                <div class="stat-label">Total Solar Generated</div>
+                <div class="stat-value" id="totalSolar">0</div>
+                <div class="stat-unit">kWh</div>
+            </div>
+            <div class="stat-card solar">
+                <div class="stat-label">Avg Solar/Month</div>
+                <div class="stat-value" id="avgSolar">0</div>
+                <div class="stat-unit">kWh</div>
+            </div>
+            <div class="stat-card pc">
+                <div class="stat-label">Total PC Usage</div>
+                <div class="stat-value" id="totalPC">0</div>
+                <div class="stat-unit">kWh</div>
+            </div>
+            <div class="stat-card pc">
+                <div class="stat-label">Avg PC/Month</div>
+                <div class="stat-value" id="avgPC">0</div>
+                <div class="stat-unit">kWh</div>
+            </div>
+            <div class="stat-card current">
+                <div class="stat-label">Current PC Avg (24h)</div>
+                <div class="stat-value" id="currentAvg">--</div>
+                <div class="stat-unit">W</div>
+            </div>
+            <div class="stat-card solar">
+                <div class="stat-label">Solar This Month</div>
+                <div class="stat-value" id="solarThisMonth">--</div>
+                <div class="stat-unit">kWh</div>
+            </div>
+            <div class="stat-card costs">
+                <div class="stat-label">Costs last month</div>
+                <div class="stat-value" id="costsLastMonth">--</div>
+                <div class="stat-unit">€</div>
+            </div>    
+        </div>
+
+        <div class="charts-container">
+            <div class="chart-container">
+                <h2 class="chart-title">Monthly Comparison</h2>
+                <div class="chart-wrapper">
+                    <div class="bar-chart" id="barChart">
+                        <div class="loading">Loading data...</div>
+                    </div>
+                </div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color solar"></div>
+                        <span>Solar Generated</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color pc"></div>
+                        <span>PC Usage</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Using example data for testing - replace with fetch in production
+        let monthlyStats = {
+            "2024-06": {
+                "solar": 1845.3,
+                "pc_kwh_used": 98.7
+            },
+            "2024-07": {
+                "solar": 2103.8,
+                "pc_kwh_used": 105.2
+            },
+            "2024-08": {
+                "solar": 1987.5,
+                "pc_kwh_used": 112.8
+            },
+            "2024-09": {
+                "solar": 1654.2,
+                "pc_kwh_used": 95.3
+            },
+            "2024-10": {
+                "solar": 1298.6,
+                "pc_kwh_used": 108.9
+            },
+            "2024-11": {
+                "solar": 876.4,
+                "pc_kwh_used": 118.6
+            },
+            "2024-12": {
+                "solar": 723.9,
+                "pc_kwh_used": 125.3
+            },
+            "2025-01": {
+                "solar": 893.2,
+                "pc_kwh_used": 122.4
+            },
+            "2025-02": {
+                "solar": 1156.7,
+                "pc_kwh_used": 110.5
+            },
+            "2025-03": {
+                "solar": 1487.3,
+                "pc_kwh_used": 98.2
+            },
+            "2025-04": {
+                "solar": 1823.9,
+                "pc_kwh_used": 102.7
+            },
+            "2025-05": {
+                "solar": 2087.4,
+                "pc_kwh_used": 95.8
+            },
+            "2025-06": {
+                "solar": 2245.6,
+                "pc_kwh_used": 89.3
+            },
+            "2025-07": {
+                "solar": 2198.1,
+                "pc_kwh_used": 92.1
+            },
+            "2025-08": {
+                "solar": 2034.5,
+                "pc_kwh_used": 97.4
+            },
+            "2025-09": {
+                "solar": 1756.8,
+                "pc_kwh_used": 103.6
+            },
+            "2025-10": {
+                "solar": 1389.2,
+                "pc_kwh_used": 115.8
+            },
+            "2025-11": {
+                "solar": 945.7,
+                "pc_kwh_used": 128.9
+            },
+            "2025-12": {
+                "solar": 798.3,
+                "pc_kwh_used": 134.2
+            },
+            "2026-01": {
+                "pc_kwh_used": 67.8,
+                "current_avg_watts_24h": 145.67,
+                "solar_this_month": 2.2
+            }
+        };
+
+        async function loadData() {
+            try {
+                const response = await fetch('monthly_stats.json');
+                if (response.ok) {
+                    monthlyStats = await response.json();
+                }
+                // If fetch fails, use the example data above
+                renderData();
+            } catch (error) {
+                console.log('Using example data');
+                renderData();
+            }
+        }
+
+        function formatMonth(monthStr) {
+            const [year, month] = monthStr.split('-');
+            const date = new Date(year, month - 1);
+            return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        }
+
+        function animateValue(id, start, end, duration) {
+            const element = document.getElementById(id);
+            if (!element) return;
+            
+            const range = end - start;
+            const increment = range / (duration / 16);
+            let current = start;
+
+            const timer = setInterval(() => {
+                current += increment;
+                if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+                    current = end;
+                    clearInterval(timer);
+                }
+                element.textContent = current.toFixed(1);
+            }, 16);
+        }
+
+        function renderData() {
+            const entries = Object.entries(monthlyStats);
+            // Get current average watts
+            const latestEntry = entries[entries.length - 1];
+            const currentAvg = latestEntry && latestEntry[1].current_avg_watts_24h 
+                ? latestEntry[1].current_avg_watts_24h 
+                : null;
+            // Get solar this month
+            const solarThisMonth = latestEntry && latestEntry[1].solar_this_month
+                ? latestEntry[1].solar_this_month
+                : null;
+            
+            // Calculate solar stats
+            const solarValues = entries
+                .map(([_, data]) => data.solar || 0)
+                .filter(v => v > 0);
+            const totalSolar = solarValues.reduce((sum, val) => sum + val, 0) + solarThisMonth;
+            const totalSolarPreviousMonths = solarValues.reduce((sum, val) => sum + val, 0);
+            const avgSolar = solarValues.length > 0 ? totalSolarPreviousMonths / solarValues.length : 0;
+
+            // Calculate PC usage stats
+            const pcValues = entries
+                .map(([_, data]) => data.pc_kwh_used || 0)
+                .filter(v => v > 0);
+            const totalPC = pcValues.reduce((sum, val) => sum + val, 0);
+            const avgPC = pcValues.length > 0 ? totalPC / pcValues.length : 0;
+
+            
+
+            // --- Costs last month ---
+            const latestMonthData = entries[entries.length - 1][1];
+
+            // Get PC usage and solar for the latest full month
+            // If solar_this_month exists, use it; otherwise fallback to previous months
+            let lastMonthIndex = entries.length - 2; // last completed month
+            if (lastMonthIndex < 0) lastMonthIndex = 0; // safety
+            const lastMonthData = entries[lastMonthIndex][1];
+
+            const pcLastMonth = lastMonthData.pc_kwh_used || 0;
+            const solarLastMonth = lastMonthData.solar || 0;
+
+            const costPerKWh = 0.25; // €/kWh
+            let costsLastMonth = (pcLastMonth - solarLastMonth) * costPerKWh;
+
+            // Avoid negative cost if solar > PC
+            if (costsLastMonth < 0) costsLastMonth = 0;
+
+            // Animate value
+            animateValue('costsLastMonth', 0, costsLastMonth, 1000);
+
+
+            // Animate summary stats
+            animateValue('totalSolar', 0, totalSolar, 1000);
+            animateValue('avgSolar', 0, avgSolar, 1000);
+            animateValue('totalPC', 0, totalPC, 1000);
+            animateValue('avgPC', 0, avgPC, 1000);
+            
+            if (currentAvg !== null) {
+                animateValue('currentAvg', 0, currentAvg, 1000);
+            } else {
+                document.getElementById('currentAvg').textContent = '--';
+            }
+            
+            if (solarThisMonth !== null) {
+                animateValue('solarThisMonth', 0, solarThisMonth, 1000);
+            } else {
+                document.getElementById('solarThisMonth').textContent = '--';
+            }
+
+            // Render bar chart
+            const allValues = entries.flatMap(([_, data]) => [
+                data.solar || 0,
+                data.pc_kwh_used || 0
+            ]).filter(v => v > 0);
+            const maxValue = Math.max(...allValues, 1);
+            
+            const barChart = document.getElementById('barChart');
+            barChart.innerHTML = '';
+
+            entries.forEach(([month, data], index) => {
+                const barItem = document.createElement('div');
+                barItem.className = 'bar-item';
+                
+                const barGroup = document.createElement('div');
+                barGroup.className = 'bar-group';
+
+                // Determine which solar value to use
+                // Only use solar_this_month for the latest month
+                const isLatestMonth = index === entries.length - 1;
+                const solarValue = (isLatestMonth && data.solar_this_month) ? data.solar_this_month : data.solar;
+
+                // Solar bar
+                if (solarValue) {
+                    const solarWrapper = document.createElement('div');
+                    solarWrapper.className = 'bar-wrapper';
+                    
+                    const solarBar = document.createElement('div');
+                    solarBar.className = 'bar solar';
+                    const heightRem = (solarValue / maxValue) * 20; // Max 20rem height
+                    solarBar.style.height = '0rem';
+                    
+                    setTimeout(() => {
+                        solarBar.style.height = `${heightRem}rem`;
+                    }, index * 100);
+                    
+                    const solarValue_display = document.createElement('div');
+                    solarValue_display.className = 'bar-value';
+                    solarValue_display.textContent = `${solarValue.toFixed(1)} kWh`;
+                    
+                    solarBar.appendChild(solarValue_display);
+                    solarWrapper.appendChild(solarBar);
+                    barGroup.appendChild(solarWrapper);
+                }
+
+                // PC usage bar
+                if (data.pc_kwh_used) {
+                    const pcWrapper = document.createElement('div');
+                    pcWrapper.className = 'bar-wrapper';
+                    
+                    const pcBar = document.createElement('div');
+                    pcBar.className = 'bar pc';
+                    const heightRem = (data.pc_kwh_used / maxValue) * 20; // Max 20rem height
+                    pcBar.style.height = '0rem';
+                    
+                    setTimeout(() => {
+                        pcBar.style.height = `${heightRem}rem`;
+                    }, index * 100 + 50);
+                    
+                    const pcValue = document.createElement('div');
+                    pcValue.className = 'bar-value';
+                    pcValue.textContent = `${data.pc_kwh_used.toFixed(1)} kWh`;
+                    
+                    pcBar.appendChild(pcValue);
+                    pcWrapper.appendChild(pcBar);
+                    barGroup.appendChild(pcWrapper);
+                }
+
+                // If no data, show placeholder
+                if (!data.solar && !data.pc_kwh_used) {
+                    const placeholder = document.createElement('div');
+                    placeholder.style.height = '20px';
+                    placeholder.style.width = '100%';
+                    barGroup.appendChild(placeholder);
+                }
+                
+                const barLabel = document.createElement('div');
+                barLabel.className = 'bar-label';
+                barLabel.textContent = formatMonth(month);
+                
+                barItem.appendChild(barGroup);
+                barItem.appendChild(barLabel);
+                barChart.appendChild(barItem);
+            });
+            
+            // Scroll to the end (newest data) after rendering
+            setTimeout(() => {
+                const chartWrapper = document.querySelector('.chart-wrapper');
+                if (chartWrapper) {
+                    chartWrapper.scrollLeft = chartWrapper.scrollWidth;
+                }
+            }, 100);
+        }
+
+        loadData();
+    </script>
+</body>
+</html>
