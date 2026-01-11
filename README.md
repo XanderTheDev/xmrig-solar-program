@@ -53,3 +53,15 @@ pip install requests
 ```bash
 nix-shell  # You need to be in the repository to do this
 ```
+
+### 3. Register/login on GOODWE SEMS PORTAL
+
+Go to [SEMS Portal](https://www.semsportal.com/home/login) and register or login.
+
+If you haven't setup a goodwe inverter, you need to do that obviously.
+
+### 4. Copy station ID into config.py
+
+When you are in the SEMS Portal look at your url. You will see something like ```https://www.semsportal.com/PowerStation/PowerStatusSnMin/5ed23680-1929-5f82-bdbf-f748ff54f43b```,
+you need to copy the ```5ed23680-1929-5f82-bdbf-f748ff54f43b``` and put it in where the placeholder is for ```'gw_station_id'``` in goodwe_scripts/config.py.
+
