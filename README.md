@@ -65,3 +65,10 @@ If you haven't setup a goodwe inverter, you need to do that obviously.
 When you are in the SEMS Portal look at your url. You will see something like ```https://www.semsportal.com/PowerStation/PowerStatusSnMin/5ed23680-1929-5f82-bdbf-f748ff54f43b```,
 you need to copy the ```5ed23680-1929-5f82-bdbf-f748ff54f43b``` and put it in where the placeholder is for ```'gw_station_id'``` in goodwe_scripts/config.py.
 
+### 5. Add all the other info into config.py
+
+Put in all your info with how you logged in into the SEMS Portal in config.py. So like:
+- ```'gw_account'``` is your email for the SEMS Portal
+- ```'gw_password'``` is your password for the SEMS Portal
+- ```'city'``` is the city of your GoodWE inverter
+
