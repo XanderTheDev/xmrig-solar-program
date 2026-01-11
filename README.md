@@ -112,3 +112,9 @@ If everything went well you can now access your [Dashboard](http://127.0.0.1:800
 - The dashboard uses a dark theme and is mobile-friendly.
 
 ---
+
+## License
+
+This project is licensed under the BSD-4 Clause License. See the [LICENSE](LICENSE) file for details.
+
+---
