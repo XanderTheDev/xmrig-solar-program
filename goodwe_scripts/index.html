@@ -498,7 +498,7 @@
             const pcLastMonth = lastMonthData.pc_kwh_used || 0;
             const solarLastMonth = lastMonthData.solar || 0;
 
-            const costPerKWh = 0.25; // €/kWh
+            const costPerKWh = 0.22; // €/kWh
             let costsLastMonth = (pcLastMonth - solarLastMonth) * costPerKWh;
 
             // Avoid negative cost if solar > PC
