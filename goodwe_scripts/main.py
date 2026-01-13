@@ -22,44 +22,43 @@ XMRIG_CMD = [
 
 CPU_ENERGY_PATH = "/sys/class/powercap/intel-rapl:0/energy_uj"
 
-# --------------------------------
-# Utility Functions
-# --------------------------------
 def read_int(path):
     with open(path, "r") as f:
         return int(f.read().strip())
 
-# --------------------------------
-# Power Measurement
-# --------------------------------
 class PowerMonitor:
-    def __init__(self):
-        # Initialize last readings
+    def __init__(self, rolling_window=5):
         self.last_cpu_energy = read_int(CPU_ENERGY_PATH)
         self.last_time = time.time()
-
+        self.rolling_window = rolling_window
+        self.recent_watts = []
 
     def read_cpu_power_watts(self):
         now = time.time()
         energy = read_int(CPU_ENERGY_PATH)
-        delta_energy = energy - self.last_cpu_energy
 
-        # Handle wrap
-        if delta_energy < 0:
-            delta_energy += RAPL_MAX_UJ
+        # Modular arithmetic to handle RAPL counter wrap
+        delta_energy = (energy - self.last_cpu_energy) % RAPL_MAX_UJ
 
         delta_time_s = now - self.last_time
         self.last_cpu_energy = energy
         self.last_time = now
 
         if delta_time_s <= 0:
-            return 0.0
-        return delta_energy / 1_000_000 / delta_time_s  # µJ → J/sec → W
+            power = 0.0
+        else:
+            power = delta_energy / 1_000_000 / delta_time_s  # µJ → J → W
 
+        # Keep rolling average
+        self.recent_watts.append(power)
+        if len(self.recent_watts) > self.rolling_window:
+            self.recent_watts.pop(0)
+
+        return sum(self.recent_watts) / len(self.recent_watts)
 
     def read_total_power(self):
-        cpu = self.read_cpu_power_watts()
-        return cpu
+        # Only CPU for now
+        return self.read_cpu_power_watts()
 
 # --------------------------------
 # Monthly Stats Helpers
@@ -149,6 +148,7 @@ def main():
     xmrig_process = subprocess.Popen(XMRIG_CMD)
 
     power_monitor = PowerMonitor()
+    time.sleep(5)
     monthly_data = load_monthly_data()
     current_month = month_key()
     pc_month_total_Wh = monthly_data.get(current_month, {}).get("pc_kwh_used", 0) * 1000
