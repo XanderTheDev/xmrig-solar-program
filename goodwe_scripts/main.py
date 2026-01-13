@@ -13,6 +13,7 @@ from config import args
 # Config
 # --------------------------------
 MONTHLY_FILE = Path("monthly_stats.json")
+RAPL_MAX_UJ = 2**32  # 32-bit counter max (adjust if your CPU uses 48-bit)
 
 XMRIG_CMD = [
     "xmrig", "-c", "/home/xander/.config/xmrig/config.json",
@@ -37,16 +38,24 @@ class PowerMonitor:
         self.last_cpu_energy = read_int(CPU_ENERGY_PATH)
         self.last_time = time.time()
 
+
     def read_cpu_power_watts(self):
         now = time.time()
         energy = read_int(CPU_ENERGY_PATH)
-        delta_energy_j = (energy - self.last_cpu_energy) / 1_000_000  # µJ → J
+        delta_energy = energy - self.last_cpu_energy
+
+        # Handle wrap
+        if delta_energy < 0:
+            delta_energy += RAPL_MAX_UJ
+
         delta_time_s = now - self.last_time
         self.last_cpu_energy = energy
         self.last_time = now
+
         if delta_time_s <= 0:
             return 0.0
-        return delta_energy_j / delta_time_s
+        return delta_energy / 1_000_000 / delta_time_s  # µJ → J/sec → W
+
 
     def read_total_power(self):
         cpu = self.read_cpu_power_watts()
