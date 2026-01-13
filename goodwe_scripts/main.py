@@ -1,64 +1,94 @@
 import json
 import subprocess
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 import time
 from collections import deque
 from requests.exceptions import RequestException
 import requests
-
 from config import args
 
 # --------------------------------
 # Config
 # --------------------------------
 MONTHLY_FILE = Path("monthly_stats.json")
-RAPL_MAX_UJ = 2**32  # 32-bit counter max (adjust if your CPU uses 48-bit)
-
+RAPL_MAX_UJ = 2**32
 XMRIG_CMD = [
     "xmrig", "-c", "/home/xander/.config/xmrig/config.json",
     "--api-worker-id=worker1", "--http-port=42000"
 ]
-
 CPU_ENERGY_PATH = "/sys/class/powercap/intel-rapl:0/energy_uj"
+SAMPLE_INTERVAL = 2.0  # Sample every 2 seconds for accurate energy tracking
+SAVE_INTERVAL = 60.0   # Save to disk every 60 seconds
 
 def read_int(path):
     with open(path, "r") as f:
         return int(f.read().strip())
 
-class PowerMonitor:
-    def __init__(self, rolling_window=5):
-        self.last_cpu_energy = read_int(CPU_ENERGY_PATH)
-        self.last_time = time.time()
-        self.rolling_window = rolling_window
-        self.recent_watts = []
-
-    def read_cpu_power_watts(self):
+class EnergyAccumulator:
+    """
+    Properly tracks energy consumption by reading RAPL counter deltas.
+    The RAPL counter measures total energy consumed - we just need to
+    accumulate the deltas over time.
+    """
+    def __init__(self):
+        self.last_energy_uj = read_int(CPU_ENERGY_PATH)
+        self.last_read_time = time.time()
+        
+        # Track total energy consumed in current month
+        self.month_total_uj = 0
+        
+        # Track energy for rolling 24h average (store energy per sample)
+        self.samples_24h = deque(maxlen=int(86400 / SAMPLE_INTERVAL))  # 24h worth of samples
+        
+    def sample_energy(self):
+        """
+        Read the RAPL counter and accumulate energy consumed since last read.
+        Returns the instantaneous power in watts for display purposes.
+        """
         now = time.time()
-        energy = read_int(CPU_ENERGY_PATH)
-
-        # Modular arithmetic to handle RAPL counter wrap
-        delta_energy = (energy - self.last_cpu_energy) % RAPL_MAX_UJ
-
-        delta_time_s = now - self.last_time
-        self.last_cpu_energy = energy
-        self.last_time = now
-
-        if delta_time_s <= 0:
-            power = 0.0
+        current_energy_uj = read_int(CPU_ENERGY_PATH)
+        
+        # Handle counter wrap with modular arithmetic
+        delta_energy_uj = (current_energy_uj - self.last_energy_uj) % RAPL_MAX_UJ
+        delta_time_s = now - self.last_read_time
+        
+        # Update state
+        self.last_energy_uj = current_energy_uj
+        self.last_read_time = now
+        
+        # Accumulate energy
+        self.month_total_uj += delta_energy_uj
+        self.samples_24h.append(delta_energy_uj)
+        
+        # Calculate instantaneous power for display
+        if delta_time_s > 0:
+            power_watts = delta_energy_uj / 1_000_000 / delta_time_s
         else:
-            power = delta_energy / 1_000_000 / delta_time_s  # µJ → J → W
-
-        # Keep rolling average
-        self.recent_watts.append(power)
-        if len(self.recent_watts) > self.rolling_window:
-            self.recent_watts.pop(0)
-
-        return sum(self.recent_watts) / len(self.recent_watts)
-
-    def read_total_power(self):
-        # Only CPU for now
-        return self.read_cpu_power_watts()
+            power_watts = 0.0
+            
+        return power_watts
+    
+    def get_month_kwh(self):
+        """Get total energy consumed this month in kWh"""
+        return self.month_total_uj / 1_000_000 / 3600 / 1000  # µJ → J → Wh → kWh
+    
+    def get_avg_power_24h(self):
+        """Get average power over last 24 hours in watts"""
+        if not self.samples_24h:
+            return 0.0
+        
+        total_energy_uj = sum(self.samples_24h)
+        total_time_s = len(self.samples_24h) * SAMPLE_INTERVAL
+        
+        if total_time_s > 0:
+            return total_energy_uj / 1_000_000 / total_time_s  # µJ → W
+        return 0.0
+    
+    def reset_month(self):
+        """Reset monthly accumulation (call on month boundary)"""
+        self.month_total_uj = 0
+        self.samples_24h.clear()
 
 # --------------------------------
 # Monthly Stats Helpers
@@ -108,7 +138,6 @@ def ensure_previous_11_months_saved(uid, token, timestamp, plant_id):
     today = datetime.now().strftime("%Y-%m-%d")
     data = get_monthly_generation(uid, token, timestamp, plant_id, today)
     monthly_data = load_monthly_data()
-
     for line in data.get("lines", []):
         if line.get("label") == "Generation (kWh)":
             xy = line.get("xy", [])
@@ -119,9 +148,8 @@ def ensure_previous_11_months_saved(uid, token, timestamp, plant_id):
                 solar_val = float(entry["y"])
                 if month not in monthly_data:
                     monthly_data[month] = {}
-                    monthly_data[month]["solar"] = round(solar_val, 3)
-                    print(f"[Startup] Saved solar {month} = {solar_val} kWh")
-
+                monthly_data[month]["solar"] = round(solar_val, 3)
+                print(f"[Startup] Saved solar {month} = {solar_val} kWh")
     save_monthly_data(monthly_data)
 
 def fetch_solar_this_month(uid, token, timestamp, plant_id):
@@ -141,59 +169,90 @@ def fetch_solar_this_month(uid, token, timestamp, plant_id):
 def main():
     uid, token, timestamp = sems_login(args["gw_account"], args["gw_password"])
     plant_id = args["gw_station_id"]
-
     ensure_previous_11_months_saved(uid, token, timestamp, plant_id)
-
+    
     print(f"[{datetime.now()}] Starting miners...")
     xmrig_process = subprocess.Popen(XMRIG_CMD)
-
-    power_monitor = PowerMonitor()
+    
     time.sleep(5)
+    
+    # Load existing monthly data
     monthly_data = load_monthly_data()
     current_month = month_key()
-    pc_month_total_Wh = monthly_data.get(current_month, {}).get("pc_kwh_used", 0) * 1000
-    samples_24h = deque(maxlen=1440)  # 24h rolling window
-
+    
+    # Initialize energy accumulator
+    # If we have existing data for this month, we'll add to it
+    accumulator = EnergyAccumulator()
+    if current_month in monthly_data and "pc_kwh_used" in monthly_data[current_month]:
+        # Add existing kWh to our accumulator
+        existing_kwh = monthly_data[current_month]["pc_kwh_used"]
+        accumulator.month_total_uj = int(existing_kwh * 1000 * 3600 * 1_000_000)  # kWh → µJ
+        print(f"[Startup] Resuming month {current_month} with {existing_kwh:.3f} kWh already logged")
+    
+    last_save_time = time.time()
+    
     try:
         while True:
             loop_start = time.time()
-
-            # Read power (averaged over interval)
-            watts = power_monitor.read_total_power()
-            samples_24h.append(watts)
-            pc_month_total_Wh += watts / 60.0  # Wh per minute
-            pc_month_total_kwh = pc_month_total_Wh / 1000.0
-            avg_24h = sum(samples_24h) / len(samples_24h) if samples_24h else 0.0
-
-            # Update JSON
-            if current_month not in monthly_data:
-                monthly_data[current_month] = {}
-            monthly_data[current_month]["pc_kwh_used"] = round(pc_month_total_kwh, 4)
-            monthly_data[current_month]["current_avg_watts_24h"] = round(avg_24h, 2)
-
-            solar_this_month = fetch_solar_this_month(uid, token, timestamp, plant_id)
-            if solar_this_month is not None:
-                monthly_data[current_month]["solar_this_month"] = round(solar_this_month, 3)
-
-            save_monthly_data(monthly_data)
-
-            # Monthly rollover
+            
+            # Sample energy consumption
+            current_watts = accumulator.sample_energy()
+            
+            # Check if we should save to disk
+            if time.time() - last_save_time >= SAVE_INTERVAL:
+                pc_month_kwh = accumulator.get_month_kwh()
+                avg_24h_watts = accumulator.get_avg_power_24h()
+                
+                # Update JSON
+                if current_month not in monthly_data:
+                    monthly_data[current_month] = {}
+                    
+                monthly_data[current_month]["pc_kwh_used"] = round(pc_month_kwh, 4)
+                monthly_data[current_month]["current_avg_watts_24h"] = round(avg_24h_watts, 2)
+                monthly_data[current_month]["current_watts"] = round(current_watts, 2)
+                
+                # Fetch solar data
+                solar_this_month = fetch_solar_this_month(uid, token, timestamp, plant_id)
+                if solar_this_month is not None:
+                    monthly_data[current_month]["solar_this_month"] = round(solar_this_month, 3)
+                
+                save_monthly_data(monthly_data)
+                last_save_time = time.time()
+                
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] "
+                      f"Current: {current_watts:.1f}W | "
+                      f"24h Avg: {avg_24h_watts:.1f}W | "
+                      f"Month Total: {pc_month_kwh:.3f} kWh")
+            
+            # Check for month rollover
             new_month = month_key()
             if new_month != current_month:
-                print(f"[Month Change] Finalizing {current_month} PC usage = {pc_month_total_kwh:.3f} kWh")
+                final_kwh = accumulator.get_month_kwh()
+                print(f"[Month Change] Finalizing {current_month} PC usage = {final_kwh:.3f} kWh")
+                
+                # Save final month data
+                monthly_data[current_month]["pc_kwh_used"] = round(final_kwh, 4)
+                save_monthly_data(monthly_data)
+                
+                # Reset for new month
                 current_month = new_month
-                pc_month_total_Wh = 0.0
-                samples_24h.clear()
-
-            # Sleep until next minute
+                accumulator.reset_month()
+            
+            # Sleep until next sample interval
             elapsed = time.time() - loop_start
-            time.sleep(max(0, 60 - elapsed))
-
+            time.sleep(max(0, SAMPLE_INTERVAL - elapsed))
+            
     except KeyboardInterrupt:
-        print("Stopping miners...")
+        print("\nStopping miners...")
         xmrig_process.terminate()
         xmrig_process.wait()
-        print("Miners stopped.")
+        
+        # Save final state
+        final_kwh = accumulator.get_month_kwh()
+        monthly_data[current_month]["pc_kwh_used"] = round(final_kwh, 4)
+        save_monthly_data(monthly_data)
+        
+        print(f"Miners stopped. Final month total: {final_kwh:.3f} kWh")
 
 if __name__ == "__main__":
     main()
